@@ -1,10 +1,12 @@
 import { types, flow } from 'mobx-state-tree';
+import type { Instance } from 'mobx-state-tree';
 import axios from 'axios';
 
 import { MeterModel } from './models/meters';
 import { AddressModel } from './models/address';
 
 const PAGE_SIZE = 20;
+
 const METERS_URL = '/api/meters/';
 const AREAS_URL = '/api/areas/';
 
@@ -16,6 +18,7 @@ export const MeterStore = types
     error: types.maybeNull(types.string),
     currentPage: types.optional(types.number, 1),
   })
+
   .actions((self) => ({
     fetchAllData: flow(function* () {
       self.isLoading = true;
@@ -24,14 +27,12 @@ export const MeterStore = types
         const metersRes = yield axios.get(METERS_URL);
         self.meters = metersRes.data.results;
 
-        const existingIds = new Set(
-          self.addresses.map((address) => address.id)
-        );
+        const existingIds = new Set(self.addresses.map((a) => a.id));
 
         const missingIds = [
           ...new Set(
             self.meters
-              .map((meter) => meter.area.id)
+              .map((m) => m.area.id)
               .filter((id) => !existingIds.has(id))
           ),
         ];
@@ -40,25 +41,21 @@ export const MeterStore = types
 
         if (missingIds.length) {
           const params = new URLSearchParams();
-
-          missingIds.forEach((id) => {
-            params.append('id__in', id);
-          });
+          missingIds.forEach((id) => params.append('id__in', id));
 
           const addressesRes = yield axios.get(
             `${AREAS_URL}?${params.toString()}`
           );
-
           console.log('Получено адресов:', addressesRes.data.results);
-
           self.addresses.push(...addressesRes.data.results);
         }
-      } catch (error) {
-        self.error = `Ошибка ${error}`;
+      } catch (e) {
+        self.error = String(e);
       } finally {
         self.isLoading = false;
       }
     }),
+
     setPage(page: number) {
       self.currentPage = page;
     },
@@ -66,26 +63,26 @@ export const MeterStore = types
     deleteMeter: flow(function* (id: string) {
       try {
         yield axios.delete(`${METERS_URL}${id}/`);
-        self.meters.replace(self.meters.filter((meter) => meter.id !== id));
+
+        self.meters.replace(self.meters.filter((m) => m.id !== id));
 
         const maxPage = Math.max(1, Math.ceil(self.meters.length / PAGE_SIZE));
 
         if (self.currentPage > maxPage) {
           self.currentPage = maxPage;
         }
-      } catch (error) {
-        self.error = `Не удалось удалить счётчик: ${error}`;
+      } catch (e) {
+        self.error = `Не удалось удалить счётчик: ${e}`;
       }
     }),
   }))
-  .views((self) => ({
-    get addressesMap() {
-      return new Map(self.addresses.map((address) => [address.id, address]));
-    },
 
-    get metersWithAdresses() {
-      return self.meters.map((meter) => {
-        const address = this.addressesMap.get(meter.area.id);
+  .views((self) => {
+    const addressesMap = () => new Map(self.addresses.map((a) => [a.id, a]));
+
+    const metersWithAddresses = () =>
+      self.meters.map((meter) => {
+        const address = addressesMap().get(meter.area.id);
 
         return {
           id: meter.id,
@@ -100,28 +97,64 @@ export const MeterStore = types
             : 'Адрес не указан',
         };
       });
-    },
-  }))
-  .views((self) => ({
-    get totalPages() {
-      return Math.ceil(self.metersWithAdresses.length / PAGE_SIZE) || 1;
-    },
 
-    get paginationMeters() {
-      const start = (self.currentPage - 1) * PAGE_SIZE;
-      return self.metersWithAdresses.slice(start, start + PAGE_SIZE);
-    },
+    return {
+      get addressesMap() {
+        return addressesMap();
+      },
 
-    get pageNumbers(): (number | '...')[] {
-      const total = this.totalPages;
+      get metersWithAdresses() {
+        return metersWithAddresses();
+      },
 
-      if (total <= 6) {
-        return Array.from({ length: total }, (_, i) => i + 1);
-      }
+      get totalPages() {
+        return Math.ceil(metersWithAddresses().length / PAGE_SIZE) || 1;
+      },
 
-      return [1, 2, 3, '...', total - 2, total - 1, total];
-    },
-  }));
+      get paginationMeters() {
+        const start = (self.currentPage - 1) * PAGE_SIZE;
+
+        return metersWithAddresses().slice(start, start + PAGE_SIZE);
+      },
+
+      get pageNumbers(): (number | '...')[] {
+        const total = Math.ceil(metersWithAddresses().length / PAGE_SIZE);
+
+        const current = self.currentPage;
+
+        if (total <= 6) {
+          return Array.from({ length: total }, (_, i) => i + 1);
+        }
+
+        const delta = 1;
+
+        const range: number[] = [];
+
+        const left = Math.max(2, current - delta);
+        const right = Math.min(total - 1, current + delta);
+
+        for (let i = left; i <= right; i++) {
+          range.push(i);
+        }
+
+        const result: (number | '...')[] = [];
+
+        result.push(1);
+
+        if (left > 2) result.push('...');
+
+        result.push(...range);
+
+        if (right < total - 1) result.push('...');
+
+        result.push(total);
+
+        return result;
+      },
+    };
+  });
+
+export type TMeterStore = Instance<typeof MeterStore>;
 
 export const store = MeterStore.create({
   meters: [],

@@ -1,0 +1,56 @@
+@import '../variables/var.css';
+@import '../variables/fonts.css';
+
+html {
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 143%;
+  color: var(--dark-60);
+  background-color: var(--absolute-white);
+  line-height: 1;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 133%;
+  color: var(--dark-60);
+}
+
+img {
+  max-width: 100%;
+}
+
+button {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  text-align: unset;
+  cursor: pointer;
+}
+
+.container {
+  margin: 0 auto;
+  padding: 0 calc(var(--container-offset)) 0 var(--container-offset);
+  max-width: var(--container-width);
+}
+

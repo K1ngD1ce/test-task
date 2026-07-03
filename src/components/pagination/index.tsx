@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
-import { store } from '../../stores/MeterStore';
+import { store } from '../../stores/RootStore';
 
 const PaginationWrapper = styled.div`
   display: flex;
@@ -53,8 +53,8 @@ const Pagination = observer(() => {
         ) : (
           <Button
             key={page}
-            $active={page === store.currentPage}
-            onClick={() => store.setPage(page)}
+            $active={page === store.pagination.currentPage}
+            onClick={() => store.pagination.setPage(page)}
           >
             {page}
           </Button>

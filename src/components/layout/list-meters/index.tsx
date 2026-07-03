@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { store } from '../../../stores/MeterStore';
+import { store } from '../../../stores/RootStore';
 import Table from '../../table';
 import Pagination from '../../pagination';
 
@@ -22,7 +22,7 @@ export default observer(function ListMeters() {
     store.fetchAllData();
   }, []);
 
-  if (store.isLoading || !store.metersWithAdresses)
+  if (store.meterStore.isLoading)
     return (
       <Section>
         <Container className="container">

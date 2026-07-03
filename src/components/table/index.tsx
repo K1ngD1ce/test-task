@@ -9,7 +9,7 @@ import {
   BasketIcon,
   // LightningIcon,
 } from '../../../public/icons/index';
-import { store } from '../../stores/MeterStore';
+import { store } from '../../stores/RootStore';
 import { observer } from 'mobx-react-lite';
 import formattedDate from '../../utils/formatDate';
 interface Props {
